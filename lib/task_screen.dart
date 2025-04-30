@@ -15,11 +15,18 @@ class _TaskScreenState extends State<TaskScreen> {
   final VoiceHandler _voiceHandler = VoiceHandler();
   bool _isListening = false;
   String _lastCommand = '';
+  final TextEditingController _editController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _voiceHandler.init();
+  }
+
+  @override
+  void dispose() {
+    _editController.dispose();
+    super.dispose();
   }
 
   void _toggleListening() {
@@ -36,6 +43,38 @@ class _TaskScreenState extends State<TaskScreen> {
     } else {
       _voiceHandler.stopListening();
     }
+  }
+
+  void _showEditDialog(TaskModel task) {
+    _editController.text = task.description;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Task'),
+        content: TextField(
+          controller: _editController,
+          decoration: const InputDecoration(
+            hintText: 'Enter task description',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (_editController.text.isNotEmpty) {
+                _firebaseService.updateTask(task.id, _editController.text);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -71,36 +110,10 @@ class _TaskScreenState extends State<TaskScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Last command: $_lastCommand',
+                  'Added: $_lastCommand',
                   style: const TextStyle(color: Colors.blue),
                 ),
               ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Voice Commands:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('• Say "add task" followed by your task'),
-                  const Text('Example: "add task buy groceries"'),
-                  const SizedBox(height: 8),
-                  const Text('• Say "complete task" followed by task description'),
-                  const Text('Example: "complete task buy groceries"'),
-                ],
-              ),
-            ),
             Expanded(
               child: StreamBuilder<List<TaskModel>>(
                 stream: _firebaseService.getTasks(),
@@ -133,7 +146,7 @@ class _TaskScreenState extends State<TaskScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No tasks yet.\nTap the mic button and say "add task" followed by your task!',
+                            'No tasks yet.\nTap the mic button and speak your task!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 18,
@@ -193,34 +206,44 @@ class _TaskScreenState extends State<TaskScreen> {
                                 ),
                             ],
                           ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            color: Colors.red[300],
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Delete Task'),
-                                  content: Text('Are you sure you want to delete "${task.description}"?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Cancel'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                color: Colors.blue[300],
+                                onPressed: () => _showEditDialog(task),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                color: Colors.red[300],
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Delete Task'),
+                                      content: Text('Are you sure you want to delete "${task.description}"?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            _firebaseService.deleteTask(task.id);
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Text(
+                                            'Delete',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        _firebaseService.deleteTask(task.id);
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text(
-                                        'Delete',
-                                        style: TextStyle(color: Colors.red),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                           onTap: () {
                             _firebaseService.markComplete(task.id);

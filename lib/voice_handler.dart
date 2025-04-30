@@ -8,6 +8,8 @@ class VoiceHandler {
   final SpeechToText _stt = SpeechToText();
   final FlutterTts _tts = FlutterTts();
   final FirebaseService _firebaseService = FirebaseService();
+  String _lastRecognizedText = '';
+  DateTime? _lastRecognitionTime;
 
   Future<void> init() async {
     await _stt.initialize();
@@ -16,43 +18,49 @@ class VoiceHandler {
   }
 
   Future<void> startListening(Function(String) onCommand) async {
+    _lastRecognizedText = '';
+    _lastRecognitionTime = null;
+
     await _stt.listen(
       onResult: (result) async {
-        String command = result.recognizedWords.toLowerCase();
-        print('Recognized command: $command'); // Debug log
+        String text = result.recognizedWords.trim();
         
-        if (command.contains("add task")) {
-          String desc = command.replaceFirst("add task", "").trim();
-          print('Adding task: $desc'); // Debug log
+        // Skip if this is the same text we just processed
+        if (text == _lastRecognizedText) {
+          return;
+        }
+
+        // Check if this is a duplicate within 2 seconds
+        if (_lastRecognitionTime != null && 
+            DateTime.now().difference(_lastRecognitionTime!) < const Duration(seconds: 2)) {
+          return;
+        }
+
+        print('Recognized text: $text'); // Debug log
+        
+        if (text.isNotEmpty) {
+          _lastRecognizedText = text;
+          _lastRecognitionTime = DateTime.now();
           
-          TaskModel task = TaskModel(id: const Uuid().v4(), description: desc);
+          TaskModel task = TaskModel(id: const Uuid().v4(), description: text);
           await _firebaseService.addTask(task);
-          await _tts.speak("Task added: $desc");
-          onCommand(command);
-        } else if (command.contains("complete task")) {
-          String keyword = command.replaceFirst("complete task", "").trim();
-          print('Completing task with keyword: $keyword'); // Debug log
-          
-          List<TaskModel> tasks = await _firebaseService.getTasks().first;
-          for (var task in tasks) {
-            if (task.description.toLowerCase().contains(keyword) && !task.completed) {
-              await _firebaseService.markComplete(task.id);
-              await _tts.speak("Marked task as complete: ${task.description}");
-              onCommand(command);
-              return;
-            }
-          }
-          await _tts.speak("Task not found");
-          onCommand(command);
-        } else {
-          await _tts.speak("Sorry, I didn't understand");
-          onCommand(command);
+          await _tts.speak("Added: $text");
+          onCommand(text);
         }
       },
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 3),
+      partialResults: false, // Only get final results
+      onSoundLevelChange: (level) {
+        // Optional: Add visual feedback for sound level
+        print('Sound level: $level');
+      },
     );
   }
 
-  void stopListening() => _stt.stop();
+  void stopListening() {
+    _stt.stop();
+    _lastRecognizedText = '';
+    _lastRecognitionTime = null;
+  }
 }
