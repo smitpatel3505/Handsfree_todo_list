@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "232586260836",
+    "project_id": "voicedo-eda53",
+    "storage_bucket": "voicedo-eda53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:232586260836:android:01f934a1e2aa782e464a71",
+        "android_client_info": {
+          "package_name": "com.example.voicedo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUAWjJigGlIs6LHjw8dOUbnL5ABRCHU-E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
