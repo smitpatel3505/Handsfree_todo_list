@@ -8,14 +8,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:voicedo/main.dart';
+import 'package:voicedo/main.dart'; // Ensure this file contains the MyApp class or replace it with the correct import.
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
+    await tester.pumpWidget(const VoiceDoApp()); // Ensure MyApp is defined in the imported main.dart file.
+    
     expect(find.text('0'), findsOneWidget);
     expect(find.text('1'), findsNothing);
 

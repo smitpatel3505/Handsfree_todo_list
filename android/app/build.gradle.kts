@@ -42,3 +42,10 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:32.2.0') // Add this line
+    implementation 'com.google.firebase:firebase-analytics' // Example: Firebase Analytics
+}
+
+apply plugin: 'com.google.gms.google-services' // Add this line at the bottom
